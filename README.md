@@ -34,3 +34,16 @@ D.generate_in_context_examples(10)
 # All these 10 examples are sampled from the same network, and encoded in the way that paper describes
 
 ```
+
+### Model
+
+```python
+from models import *
+
+# If we follow the above example, we have to set the parameters as following
+n_dims = 8
+n_positions = 11
+
+model = TransformerModel(n_dims, n_positions, n_embd=128, n_layer=12, n_head=4)
+
+```
