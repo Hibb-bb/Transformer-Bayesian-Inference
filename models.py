@@ -73,7 +73,8 @@ def get_relevant_baselines(task_name):
         ],
     }
 
-    models = [model_cls(**kwargs) for model_cls, kwargs in task_to_baselines[task_name]]
+    models = [model_cls(**kwargs)
+              for model_cls, kwargs in task_to_baselines[task_name]]
     return models
 
 
@@ -119,7 +120,8 @@ class TransformerModel(nn.Module):
         else:
             inds = torch.tensor(inds)
             if max(inds) >= ys.shape[1] or min(inds) < 0:
-                raise ValueError("inds contain indices where xs and ys are not defined")
+                raise ValueError(
+                    "inds contain indices where xs and ys are not defined")
         zs = self._combine(xs, ys)
         embeds = self._read_in(zs)
         output = self._backbone(inputs_embeds=embeds).last_hidden_state
@@ -139,23 +141,26 @@ class NNModel:
             inds = range(ys.shape[1])
         else:
             if max(inds) >= ys.shape[1] or min(inds) < 0:
-                raise ValueError("inds contain indices where xs and ys are not defined")
+                raise ValueError(
+                    "inds contain indices where xs and ys are not defined")
 
         preds = []
 
         for i in inds:
             if i == 0:
-                preds.append(torch.zeros_like(ys[:, 0]))  # predict zero for first point
+                # predict zero for first point
+                preds.append(torch.zeros_like(ys[:, 0]))
                 continue
             train_xs, train_ys = xs[:, :i], ys[:, :i]
-            test_x = xs[:, i : i + 1]
+            test_x = xs[:, i: i + 1]
             dist = (train_xs - test_x).square().sum(dim=2).sqrt()
 
             if self.weights == "uniform":
                 weights = torch.ones_like(dist)
             else:
                 weights = 1.0 / dist
-                inf_mask = torch.isinf(weights).float()  # deal with exact match
+                # deal with exact match
+                inf_mask = torch.isinf(weights).float()
                 inf_row = torch.any(inf_mask, axis=1)
                 weights[inf_row] = inf_mask[inf_row]
 
@@ -170,7 +175,9 @@ class NNModel:
         return torch.stack(preds, dim=1)
 
 
-# xs and ys should be on cpu for this method. Otherwise the output maybe off in case when train_xs is not full rank due to the implementation of torch.linalg.lstsq.
+# xs and ys should be on cpu for this method. Otherwise the output maybe
+# off in case when train_xs is not full rank due to the implementation of
+# torch.linalg.lstsq.
 class LeastSquaresModel:
     def __init__(self, driver=None):
         self.driver = driver
@@ -182,16 +189,18 @@ class LeastSquaresModel:
             inds = range(ys.shape[1])
         else:
             if max(inds) >= ys.shape[1] or min(inds) < 0:
-                raise ValueError("inds contain indices where xs and ys are not defined")
+                raise ValueError(
+                    "inds contain indices where xs and ys are not defined")
 
         preds = []
 
         for i in inds:
             if i == 0:
-                preds.append(torch.zeros_like(ys[:, 0]))  # predict zero for first point
+                # predict zero for first point
+                preds.append(torch.zeros_like(ys[:, 0]))
                 continue
             train_xs, train_ys = xs[:, :i], ys[:, :i]
-            test_x = xs[:, i : i + 1]
+            test_x = xs[:, i: i + 1]
 
             ws, _, _, _ = torch.linalg.lstsq(
                 train_xs, train_ys.unsqueeze(2), driver=self.driver
@@ -212,16 +221,18 @@ class AveragingModel:
             inds = range(ys.shape[1])
         else:
             if max(inds) >= ys.shape[1] or min(inds) < 0:
-                raise ValueError("inds contain indices where xs and ys are not defined")
+                raise ValueError(
+                    "inds contain indices where xs and ys are not defined")
 
         preds = []
 
         for i in inds:
             if i == 0:
-                preds.append(torch.zeros_like(ys[:, 0]))  # predict zero for first point
+                # predict zero for first point
+                preds.append(torch.zeros_like(ys[:, 0]))
                 continue
             train_xs, train_ys = xs[:, :i], ys[:, :i]
-            test_x = xs[:, i : i + 1]
+            test_x = xs[:, i: i + 1]
 
             train_zs = train_xs * train_ys.unsqueeze(dim=-1)
             w_p = train_zs.mean(dim=1).unsqueeze(dim=-1)
@@ -249,7 +260,8 @@ class LassoModel:
             inds = range(ys.shape[1])
         else:
             if max(inds) >= ys.shape[1] or min(inds) < 0:
-                raise ValueError("inds contain indices where xs and ys are not defined")
+                raise ValueError(
+                    "inds contain indices where xs and ys are not defined")
 
         preds = []  # predict one for first point
 
@@ -263,11 +275,13 @@ class LassoModel:
                 for j in range(ys.shape[0]):
                     train_xs, train_ys = xs[j, :i], ys[j, :i]
 
-                    # If all points till now have the same label, predict that label.
+                    # If all points till now have the same label, predict that
+                    # label.
 
                     clf = Lasso(
-                        alpha=self.alpha, fit_intercept=False, max_iter=self.max_iter
-                    )
+                        alpha=self.alpha,
+                        fit_intercept=False,
+                        max_iter=self.max_iter)
 
                     # Check for convergence.
                     with warnings.catch_warnings():
@@ -275,12 +289,13 @@ class LassoModel:
                         try:
                             clf.fit(train_xs, train_ys)
                         except Warning:
-                            print(f"lasso convergence warning at i={i}, j={j}.")
+                            print(
+                                f"lasso convergence warning at i={i}, j={j}.")
                             raise
 
                     w_pred = torch.from_numpy(clf.coef_).unsqueeze(1)
 
-                    test_x = xs[j, i : i + 1]
+                    test_x = xs[j, i: i + 1]
                     y_pred = (test_x @ w_pred.float()).squeeze(1)
                     pred[j] = y_pred[0]
 
@@ -290,7 +305,9 @@ class LassoModel:
 
 
 # Gradient Descent and variants.
-# Example usage: gd_model = GDModel(NeuralNetwork, {'in_size': 50, 'hidden_size':400, 'out_size' :1}, opt_alg = 'adam', batch_size = 100, lr = 5e-3, num_steps = 200)
+# Example usage: gd_model = GDModel(NeuralNetwork, {'in_size': 50,
+# 'hidden_size':400, 'out_size' :1}, opt_alg = 'adam', batch_size = 100,
+# lr = 5e-3, num_steps = 200)
 class GDModel:
     def __init__(
         self,
@@ -328,7 +345,8 @@ class GDModel:
             inds = range(ys.shape[1])
         else:
             if max(inds) >= ys.shape[1] or min(inds) < 0:
-                raise ValueError("inds contain indices where xs and ys are not defined")
+                raise ValueError(
+                    "inds contain indices where xs and ys are not defined")
 
         preds = []  # predict one for first point
 
@@ -343,19 +361,22 @@ class GDModel:
                 pred = torch.zeros_like(ys[:, 0])
 
                 train_xs, train_ys = xs[:, :i], ys[:, :i]
-                test_xs, test_ys = xs[:, i : i + 1], ys[:, i : i + 1]
+                test_xs, test_ys = xs[:, i: i + 1], ys[:, i: i + 1]
 
                 if self.opt_alg == "sgd":
                     optimizer = torch.optim.SGD(model.parameters(), lr=self.lr)
                 elif self.opt_alg == "adam":
-                    optimizer = torch.optim.Adam(model.parameters(), lr=self.lr)
+                    optimizer = torch.optim.Adam(
+                        model.parameters(), lr=self.lr)
                 else:
-                    raise NotImplementedError(f"{self.opt_alg} not implemented.")
+                    raise NotImplementedError(
+                        f"{self.opt_alg} not implemented.")
 
                 if self.loss_name == "squared":
                     loss_criterion = nn.MSELoss()
                 else:
-                    raise NotImplementedError(f"{self.loss_name} not implemented.")
+                    raise NotImplementedError(
+                        f"{self.loss_name} not implemented.")
 
                 # Training loop
                 for j in range(self.num_steps):
@@ -364,7 +385,8 @@ class GDModel:
                     mask = torch.zeros(i).bool()
                     perm = torch.randperm(i)
                     mask[perm[: self.batch_size]] = True
-                    train_xs_cur, train_ys_cur = train_xs[:, mask, :], train_ys[:, mask]
+                    train_xs_cur, train_ys_cur = train_xs[:,
+                                                          mask, :], train_ys[:, mask]
 
                     if verbose and j % print_step == 0:
                         model.eval()
@@ -414,7 +436,8 @@ class DecisionTreeModel:
             inds = range(ys.shape[1])
         else:
             if max(inds) >= ys.shape[1] or min(inds) < 0:
-                raise ValueError("inds contain indices where xs and ys are not defined")
+                raise ValueError(
+                    "inds contain indices where xs and ys are not defined")
 
         preds = []
 
@@ -430,7 +453,7 @@ class DecisionTreeModel:
 
                     clf = tree.DecisionTreeRegressor(max_depth=self.max_depth)
                     clf = clf.fit(train_xs, train_ys)
-                    test_x = xs[j, i : i + 1]
+                    test_x = xs[j, i: i + 1]
                     y_pred = clf.predict(test_x)
                     pred[j] = y_pred[0]
 
@@ -452,7 +475,8 @@ class XGBoostModel:
             inds = range(ys.shape[1])
         else:
             if max(inds) >= ys.shape[1] or min(inds) < 0:
-                raise ValueError("inds contain indices where xs and ys are not defined")
+                raise ValueError(
+                    "inds contain indices where xs and ys are not defined")
 
         preds = []
 
@@ -468,7 +492,7 @@ class XGBoostModel:
                     clf = xgb.XGBRegressor()
 
                     clf = clf.fit(train_xs, train_ys)
-                    test_x = xs[j, i : i + 1]
+                    test_x = xs[j, i: i + 1]
                     y_pred = clf.predict(test_x)
                     pred[j] = y_pred[0].item()
 

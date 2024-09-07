@@ -5,10 +5,11 @@ import torch
 
 import numpy as np
 
+
 def get_prob_dist_binary():
 
-    p = np.random.uniform(0,1)
-    return [p, 1-p]
+    p = np.random.uniform(0, 1)
+    return [p, 1 - p]
 
 
 def simple_DAG():
@@ -21,7 +22,7 @@ def simple_DAG():
     model = BayesianNetwork()
     model.add_distributions([A, B])
     model.add_edge(A, B)
-    return model 
+    return model
 
 
 def generate_wet_grass_data():
@@ -37,9 +38,12 @@ def generate_wet_grass_data():
     # wet_grass_p4
 
     cloudy = Categorical([get_prob_dist_binary()])
-    rain = ConditionalCategorical([[get_prob_dist_binary(), get_prob_dist_binary()]])
-    sprinkler = ConditionalCategorical([[get_prob_dist_binary(), get_prob_dist_binary()]])
-    wet_grass = ConditionalCategorical([[[get_prob_dist_binary(), get_prob_dist_binary()], [get_prob_dist_binary(), get_prob_dist_binary()]]])
+    rain = ConditionalCategorical(
+        [[get_prob_dist_binary(), get_prob_dist_binary()]])
+    sprinkler = ConditionalCategorical(
+        [[get_prob_dist_binary(), get_prob_dist_binary()]])
+    wet_grass = ConditionalCategorical([[[get_prob_dist_binary(), get_prob_dist_binary()], [
+                                       get_prob_dist_binary(), get_prob_dist_binary()]]])
 
     model = BayesianNetwork()
     model.add_distributions([cloudy, rain, sprinkler, wet_grass])
@@ -49,7 +53,7 @@ def generate_wet_grass_data():
     model.add_edge(rain, wet_grass)
     model.add_edge(sprinkler, wet_grass)
 
-    return model 
+    return model
 
 
 # model = generate_wet_grass_data()
