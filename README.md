@@ -48,6 +48,12 @@ model = TransformerModel(n_dims, n_positions, n_embd=128, n_layer=12, n_head=4)
 
 ```
 
+### Run Experiment
+
+```
+python3 main_fast.py --num-examples 200 --steps 10000 --layers 12
+python3 evaluate_fast.py --num-examples 200 --steps 10000 --layers 12
+```
 
 
-note: `autopep8 --diff --in-place --aggressive --aggressive <filename>`
+note: `autopep8 --in-place --aggressive --aggressive <filename>`

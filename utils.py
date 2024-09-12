@@ -5,13 +5,36 @@ import torch
 import numpy as np
 
 
-def get_prob_dist_binary():
+def get_prob_dist_binary(mu_prime=0.1):
 
-    p = np.random.uniform(0, 1)
+    eps = 1e-3
+
+    # Parameters for the two Gaussian distributions
+    mean1, std1, weight1 = (0 + mu_prime), 1.0, 0.5
+    mean2, std2, weight2 = (1 - mu_prime), 1.0, 0.5
+
+    num_samples = 1
+
+    samples1 = torch.normal(mean1, std1, size=(num_samples,)) * weight1
+    samples2 = torch.normal(mean2, std2, size=(num_samples,)) * weight2
+
+    p = samples1 + samples2
+    p = torch.clamp(p, 0, 1)
+
+    if p == 1:
+        p = p - eps
+    elif p == 0:
+        p = p + eps
+
     return [p, 1 - p]
 
+# def get_prob_dist_binary():
 
-def get_wet_grass_network():
+#     p = np.random.uniform(0, 1)
+#     return [p, 1 - p]
+
+
+def get_wet_grass_network(mu=0.1):
 
     cloudy = Categorical([get_prob_dist_binary()])
     rain = ConditionalCategorical(
