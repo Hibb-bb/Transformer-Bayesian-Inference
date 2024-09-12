@@ -55,5 +55,32 @@ python3 main_fast.py --num-examples 200 --steps 10000 --layers 12
 python3 evaluate_fast.py --num-examples 200 --steps 10000 --layers 12
 ```
 
+### Results
+
+```yaml
+layer : 6
+num-example: 100
+hidden-dim: 128
+steps: 50000
+curriculum: True
+init_lr: 1e-4
+```
+![Loss and acc curve](./imgs/layer6.png)
+![Comparing to Fitting a Bayesian Network](./imgs/layer6_eval.png)
+
+
+
+```yaml
+layer : 12
+num-example: 100
+hidden-dim: 128
+steps: 50000
+curriculum: True
+init_lr: 1e-4
+```
+
+![Loss and acc curve](./imgs/layer12.png)
+![Comparing to Fitting a Bayesian Network](./imgs/layer12_eval.png)
+
 
 note: `autopep8 --in-place --aggressive --aggressive <filename>`
